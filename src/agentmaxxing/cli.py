@@ -7,7 +7,9 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .keys import KeyFileError, generate, load_public
+from .keys import KeyFileError, generate, load_private, load_public
+from .proxy import Proxy
+from .store import ReceiptLog
 from .verify import verify_log
 
 
@@ -33,6 +35,27 @@ def _cmd_verify(args: argparse.Namespace) -> int:
     return 0 if result.ok else 1
 
 
+def _cmd_proxy(args: argparse.Namespace) -> int:
+    command: list[str] = args.upstream
+    try:
+        private_key = load_private(Path(args.key))
+        log = ReceiptLog(Path(args.log), private_key, max_stored_bytes=args.max_stored_bytes)
+    except (KeyFileError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    name = args.server_name or Path(command[0]).stem
+    print(f"agentmaxxing proxy: recording '{name}' to {args.log}", file=sys.stderr)
+    proxy = Proxy(
+        command,
+        log,
+        server_name=name,
+        client_in=sys.stdin.buffer,
+        client_out=sys.stdout.buffer,
+        client_err=sys.stderr.buffer,
+    )
+    return proxy.run()
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="agentmaxxing",
@@ -54,6 +77,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="last known-good receipt hash; also detects removal of receipts from the end",
     )
     verify.set_defaults(func=_cmd_verify)
+
+    proxy = sub.add_parser(
+        "proxy",
+        help="wrap a stdio MCP server and record a receipt per tools/call",
+        description="Usage: agentmaxxing proxy [options] -- <upstream command> [args...]",
+    )
+    proxy.add_argument("--key", default="agentmaxxing.key", help="private key file (.key)")
+    proxy.add_argument("--log", default="agentmaxxing.receipts.jsonl", help="receipt log path")
+    proxy.add_argument("--server-name", help="name stored in receipts (default: command name)")
+    proxy.add_argument(
+        "--max-stored-bytes",
+        type=int,
+        default=262144,
+        help="store a marker instead of args/results larger than this (hashes stay exact)",
+    )
+    proxy.add_argument("upstream", nargs="+", help="upstream MCP server command (after --)")
+    proxy.set_defaults(func=_cmd_proxy)
     return parser
 
 

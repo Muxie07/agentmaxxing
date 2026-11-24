@@ -64,6 +64,18 @@ def redact(value: Any) -> Any:
     return value
 
 
+def bound(value: Any, max_bytes: int | None) -> Any:
+    """Replace an oversized value with a small marker. The receipt's SHA-256 fields still
+    cover the full raw value, so the original can be proven against the receipt."""
+    if max_bytes is None:
+        return value
+    text = canonical_json(value)
+    size = len(text.encode("utf-8"))
+    if size <= max_bytes:
+        return value
+    return {"_truncated": True, "original_bytes": size, "preview": text[:1024]}
+
+
 def compute_hash(body: dict[str, Any]) -> str:
     return sha256_hex(canonical_json({k: body[k] for k in BODY_FIELDS}))
 
@@ -88,6 +100,7 @@ def make_receipt(
     prev_hash: str,
     receipt_id: str | None = None,
     timestamp: str | None = None,
+    max_stored_bytes: int | None = None,
 ) -> Receipt:
     """Build, hash and sign one receipt.
 
@@ -101,8 +114,8 @@ def make_receipt(
         "timestamp": timestamp or datetime.now(UTC).isoformat(timespec="milliseconds"),
         "server": server,
         "tool": tool,
-        "args": redact(args),
-        "result": redact(result),
+        "args": bound(redact(args), max_stored_bytes),
+        "result": bound(redact(result), max_stored_bytes),
         "args_sha256": sha256_hex(canonical_json(args)),
         "result_sha256": sha256_hex(canonical_json(result)),
         "status": status,

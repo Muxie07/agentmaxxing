@@ -20,8 +20,15 @@ class ReceiptLog:
     do not write to the same file from several processes.
     """
 
-    def __init__(self, path: Path, private_key: Ed25519PrivateKey) -> None:
+    def __init__(
+        self,
+        path: Path,
+        private_key: Ed25519PrivateKey,
+        *,
+        max_stored_bytes: int | None = None,
+    ) -> None:
         self.path = path
+        self._max_stored_bytes = max_stored_bytes
         self._key = private_key
         self._lock = threading.Lock()
         self._prev_hash = self._last_hash()
@@ -70,6 +77,7 @@ class ReceiptLog:
                 status=status,
                 duration_ms=duration_ms,
                 prev_hash=self._prev_hash,
+                max_stored_bytes=self._max_stored_bytes,
             )
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with self.path.open("a", encoding="utf-8", newline="\n") as fh:
