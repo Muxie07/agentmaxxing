@@ -1,9 +1,11 @@
 """Evaluate the NL claim extractor against data/labels/examples.jsonl.
 
     uv run python scripts/eval_extractor.py --model deepseek-r1:latest
+    uv run python scripts/eval_extractor.py --model gemini-2.5-flash --out-prefix extractor_gemini
 
-Writes results/extractor_eval.json (metrics and run metadata) and
-results/extractor_raw.jsonl (every raw model reply). Needs a running Ollama.
+Writes results/<prefix>_eval.json (metrics and run metadata) and results/<prefix>_raw.jsonl
+(every raw model reply). Ollama models need a running Ollama; gemini-* models need
+GEMINI_API_KEY in the environment or .env (the key is never written to results).
 """
 
 from __future__ import annotations
@@ -21,7 +23,7 @@ from typing import Any
 
 from agentmaxxing.claims import SYSTEM_PROMPT, Claim, extract_nl
 from agentmaxxing.extractor_eval import evaluate, load_examples
-from agentmaxxing.llm import DEFAULT_HOST, OllamaClient
+from agentmaxxing.llm import DEFAULT_HOST, GeminiClient, OllamaClient, make_client
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -42,7 +44,7 @@ def ollama_version(host: str) -> str | None:
 class Recorder:
     """Wraps a client, keeping every raw reply and its latency."""
 
-    def __init__(self, inner: OllamaClient) -> None:
+    def __init__(self, inner: OllamaClient | GeminiClient) -> None:
         self.inner = inner
         self.model = inner.model
         self.rows: list[dict[str, Any]] = []
@@ -77,6 +79,11 @@ def main() -> int:
     parser.add_argument("--out", default=str(ROOT / "results"))
     parser.add_argument("--limit", type=int, help="only the first N examples (smoke test)")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--out-prefix",
+        default="extractor",
+        help="file prefix under --out (default: extractor; use another to keep earlier runs)",
+    )
     args = parser.parse_args()
 
     labels = Path(args.labels)
@@ -86,7 +93,10 @@ def main() -> int:
     if args.limit:
         examples = examples[: args.limit]
 
-    recorder = Recorder(OllamaClient(args.model, host=args.host, temperature=0.0, seed=args.seed))
+    client = make_client(
+        args.model, host=args.host, temperature=0.0, seed=args.seed, env_file=ROOT / ".env"
+    )
+    recorder = Recorder(client)
 
     def extract(ex: dict[str, Any]) -> list[Claim]:
         recorder.current = ex["id"]
@@ -101,7 +111,11 @@ def main() -> int:
     per_example = report.pop("per_example")
     meta = {
         "model": args.model,
-        "ollama_version": ollama_version(args.host),
+        "provider": "gemini" if isinstance(client, GeminiClient) else "ollama",
+        "ollama_version": ollama_version(args.host) if isinstance(client, OllamaClient) else None,
+        "model_version": client.model_version if isinstance(client, GeminiClient) else None,
+        "api_retries": client.retries if isinstance(client, GeminiClient) else 0,
+        "schema_fallbacks": client.schema_fallbacks if isinstance(client, GeminiClient) else 0,
         "date_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "temperature": 0.0,
         "seed": args.seed,
@@ -116,17 +130,17 @@ def main() -> int:
         "mean_seconds_per_example": round(elapsed / max(len(examples), 1), 2),
         "partial_run": bool(args.limit),
     }
-    (out / "extractor_eval.json").write_text(
+    (out / f"{args.out_prefix}_eval.json").write_text(
         json.dumps({"meta": meta, **report}, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
-    with (out / "extractor_raw.jsonl").open("w", encoding="utf-8", newline="\n") as fh:
+    with (out / f"{args.out_prefix}_raw.jsonl").open("w", encoding="utf-8", newline="\n") as fh:
         raw_by_id = {r["id"]: r for r in recorder.rows}
         for row in per_example:
             fh.write(
                 json.dumps({**row, "model_call": raw_by_id.get(row["id"])}, ensure_ascii=False)
                 + "\n"
             )
-    print(f"wrote {out / 'extractor_eval.json'}", file=sys.stderr)
+    print(f"wrote {out / (args.out_prefix + '_eval.json')}", file=sys.stderr)
     return 0
 
 

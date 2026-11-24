@@ -66,3 +66,21 @@ DEVIATIONS: (1) Labels are written by Claude, not scraped from real agent runs, 
 KNOWN GAPS: The NL extractor is weak: 22 of 43 correct answers are flagged RESULT_MISREPORTED (the model writes phrases, not literal values, as facts), and it adds claims the labels lack. The headline numbers measure a small local reasoning model plus a strict verifier, not the best achievable pipeline. No held-out set. One annotator. Rounding is not forgiven. Structured extractor is tested on synthetic transcripts only. The 28 "extra" UNVERIFIABLE and 23 extra NOT_CALLED claims were not individually inspected.
 NEEDS MUFEED: Review docs/label_review.md (20 examples, tick agree or write corrections) and tell me the result; I will fix any label and re-run `scripts/replay_extractor_eval.py` (no model needed). Decide whether M4 should use a stronger model than the local deepseek-r1 for the study (free API keys in .env would let us). Push and confirm CI. Say "continue" for M4.
 ```
+
+## Pre-M4 fixes (done by Claude in Cowork, not Claude Code)
+
+```
+MILESTONE: pre-M4 fixes
+STATUS: partial (code done and tested; the Gemini eval run itself is not done)
+TESTS: 73/73, `uv run pytest` (9 new in tests/test_llm.py, no network). ruff check, ruff format --check, mypy --strict on src: clean. scripts/replay_extractor_eval.py still reproduces results/extractor_eval.json.
+EVIDENCE: src/agentmaxxing/llm.py (GeminiClient, read_env_key, make_client), src/agentmaxxing/__main__.py, scripts/eval_extractor.py (--out-prefix, provider metadata), scripts/render_extractor_table.py (one comparison row per results/*_eval.json), scripts/check_m4_gate.py, README.md, docs/labelling.md, src/agentmaxxing/extractor_eval.py
+NUMBERS: none new. Gate on the existing deepseek-r1 run: VERIFIED recall 21% (need 80%), RESULT_MISREPORTED precision 28% (need 70%) -> FAILED.
+DEVIATIONS: (1) The Gemini eval was not run: this Cowork session's network blocks generativelanguage.googleapis.com from both the cloud sandbox and the local VM. It must be run on Mufeed's machine. (2) Gemini key is sent in the x-goog-api-key header, never in the URL, and scrubbed from errors. A 400 on the response schema falls back once to JSON mode and is counted in meta.schema_fallbacks. (3) "hand labels"/"hand-labelled" replaced with "Claude-written" wording; labelling.md now says human review is pending.
+KNOWN GAPS: GeminiClient is tested only against fake HTTP; the real API's acceptance of responseJsonSchema with ["string","null"] types is unconfirmed (the fallback covers a 400). Fact matching was not changed (no held-out split yet, so no tuning). Label review of 20 still pending.
+NEEDS MUFEED / CLAUDE CODE: run on Mufeed's machine:
+  uv run python scripts/eval_extractor.py --model gemini-2.5-flash --out-prefix extractor_gemini --limit 5   (smoke test)
+  uv run python scripts/eval_extractor.py --model gemini-2.5-flash --out-prefix extractor_gemini
+  uv run python scripts/check_m4_gate.py results/extractor_gemini_eval.json
+  uv run python scripts/render_extractor_table.py
+Free tier rate limits may make the full 110-example run take several minutes; retries are automatic.
+```

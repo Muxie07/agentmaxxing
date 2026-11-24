@@ -1,7 +1,7 @@
-"""Score an extractor against the hand-labelled examples in ``data/labels/``.
+"""Score an extractor against the Claude-written labelled examples in ``data/labels/``.
 
 End to end per example: extract claims from the answer, verify them against the example's
-receipts, and compare each resulting verdict with the hand label.
+receipts, and compare each resulting verdict with the gold label.
 
 Matching: predicted and gold claims are paired by normalised tool name (``None`` is its own
 group), in order within a tool. For a verdict V:

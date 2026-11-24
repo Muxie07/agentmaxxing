@@ -9,7 +9,7 @@ claim extractor (`results/extractor_eval.json`). One JSON object per line:
 | `tools` | the tool names the agent had (the extractor is told these) |
 | `answer` | the agent's final answer, free text |
 | `receipts` | what really happened: `tool`, `args`, `status`, `result` (as a receipt log would store them) |
-| `claims` | the gold claims in the answer, each with a hand-assigned `verdict` |
+| `claims` | the gold claims in the answer, each with an assigned `verdict` |
 | `note` | optional, for odd cases |
 
 ## What counts as a claim
@@ -52,8 +52,10 @@ Judgement calls, decided once and applied everywhere:
 
 ## How the labels were made, and what is checked
 
-The 110 examples were written by hand by Claude (the AI model that wrote this repo), not
-scraped from real agent runs, which is a limitation: real answers are messier. Six tools,
+The 110 examples and their gold verdicts were written by Claude (the AI model that wrote this
+repo), not by a person and not scraped from real agent runs. Human review of a random sample of
+20 (`docs/label_review.md`) is pending; until it is done, treat the labels as unreviewed. Real
+answers are also messier than these. Six tools,
 varied phrasing, multi-claim answers, retries, truncated and redacted results. They contain 113
 claims: 43 `VERIFIED`, 20 each of `NOT_CALLED`, `FAILED_REPORTED_AS_SUCCESS` and
 `RESULT_MISREPORTED`, and 10 `UNVERIFIABLE`; five examples have no tool claims.

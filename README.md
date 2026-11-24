@@ -36,7 +36,7 @@ uv run agentmaxxing check --log calls.jsonl --pubkey keys/agent.pub --answer ans
 ```
 
 Verdicts: `VERIFIED`, `NOT_CALLED`, `FAILED_REPORTED_AS_SUCCESS`, `RESULT_MISREPORTED`,
-`UNVERIFIABLE`. The verifier is deterministic and tested against all 110 hand labels; the
+`UNVERIFIABLE`. The verifier is deterministic and tested against all 110 Claude-written labels; the
 claim *extractor* is what is measured below. Two extractors exist: structured (from transcript
 `tool_use` blocks, exact) and natural-language (a local LLM with a JSON schema). Labels and rules:
 [docs/labelling.md](docs/labelling.md).
@@ -47,7 +47,13 @@ This is a weak first result with a small local model, and the labels are single-
 (see docs/labelling.md). Treat a verdict from the NL path as a lead to check, not a finding.
 
 <!-- extractor-table:start -->
-Model `deepseek-r1:latest` (Ollama 0.6.5, temperature 0.0, seed 0), run 2026-11-24 on 110 hand-labelled examples (113 claims). Source: [results/extractor_eval.json](results/extractor_eval.json).
+All runs (labels written by Claude; human review of 20 pending):
+
+| Run | Model | Date | VERIFIED recall | RESULT_MISREPORTED precision | Claim detection recall | Source |
+|---|---|---|---|---|---|---|
+| extractor (detailed below) | `deepseek-r1:latest` | 2026-11-24 | 21% | 28% | 60% | [extractor_eval.json](results/extractor_eval.json) |
+
+Detailed: model `deepseek-r1:latest` (Ollama 0.6.5, temperature 0.0, seed 0), run 2026-11-24 on 110 labelled examples (113 claims). Source: [results/extractor_eval.json](results/extractor_eval.json).
 
 | Verdict | Precision | Recall | Support |
 |---|---|---|---|
@@ -57,9 +63,9 @@ Model `deepseek-r1:latest` (Ollama 0.6.5, temperature 0.0, seed 0), run 2026-11-
 | RESULT_MISREPORTED | 28% | 45% | 20 |
 | UNVERIFIABLE | 18% | 60% | 10 |
 
-Where the labels and the pipeline disagree (rows: hand label; columns: what the pipeline concluded; source: [results/extractor_confusion.json](results/extractor_confusion.json)):
+Where the labels and the pipeline disagree (rows: gold label; columns: what the pipeline concluded; source: [results/extractor_confusion.json](results/extractor_confusion.json)):
 
-| Hand label | VERIFIED | NOT_CALLED | FAILED_REPORTED_AS_SUCCESS | RESULT_MISREPORTED | UNVERIFIABLE | (claim not found) |
+| Gold label | VERIFIED | NOT_CALLED | FAILED_REPORTED_AS_SUCCESS | RESULT_MISREPORTED | UNVERIFIABLE | (claim not found) |
 |---|---|---|---|---|---|---|
 | VERIFIED | 9 | 0 | 0 | 22 | 0 | 12 |
 | NOT_CALLED | 0 | 10 | 0 | 1 | 0 | 9 |
