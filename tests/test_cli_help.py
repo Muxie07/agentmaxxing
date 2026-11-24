@@ -12,7 +12,7 @@ def test_help_exits_zero(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as exc:
         build_parser().parse_args(["--help"])
     assert exc.value.code == 0
-    assert "agentmaxxing" in capsys.readouterr().out
+    assert "keygen" in capsys.readouterr().out
 
 
 def test_module_runs_as_script() -> None:
@@ -20,4 +20,4 @@ def test_module_runs_as_script() -> None:
         [sys.executable, "-m", "agentmaxxing.cli", "--help"], capture_output=True, text=True
     )
     assert proc.returncode == 0
-    assert "agentmaxxing" in proc.stdout
+    assert "verify" in proc.stdout
