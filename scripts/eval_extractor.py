@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any
 
 from agentmaxxing.claims import SYSTEM_PROMPT, Claim, extract_nl
-from agentmaxxing.extractor_eval import evaluate, load_examples
+from agentmaxxing.extractor_eval import EvaluationAborted, evaluate, load_examples
 from agentmaxxing.llm import DEFAULT_HOST, GeminiClient, OllamaClient, make_client
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -71,6 +71,22 @@ class Recorder:
             )
 
 
+FAIL_FAST_AFTER = 3
+
+
+def fails_fast(rows: list[dict[str, Any]]) -> None:
+    """Stop the run (writing nothing) if the first calls all fail with the same error.
+
+    A broken setup (wrong model id, bad key, no network) would otherwise produce a results
+    file of 0% scores that looks like a measurement.
+    """
+    if len(rows) != FAIL_FAST_AFTER:
+        return
+    errors = {row["error"] for row in rows}
+    if len(errors) == 1 and None not in errors:
+        raise EvaluationAborted(f"first {FAIL_FAST_AFTER} calls failed: {next(iter(errors))}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="deepseek-r1:latest")
@@ -101,10 +117,17 @@ def main() -> int:
     def extract(ex: dict[str, Any]) -> list[Claim]:
         recorder.current = ex["id"]
         print(f"{ex['id']} ", end="", flush=True, file=sys.stderr)
-        return extract_nl(ex["answer"], ex["tools"], recorder)
+        try:
+            return extract_nl(ex["answer"], ex["tools"], recorder)
+        finally:
+            fails_fast(recorder.rows)
 
     started = time.monotonic()
-    report = evaluate(examples, extract)
+    try:
+        report = evaluate(examples, extract)
+    except EvaluationAborted as exc:
+        print(f"\naborted, no results written: {exc}", file=sys.stderr)
+        return 1
     elapsed = round(time.monotonic() - started, 1)
     print(file=sys.stderr)
 

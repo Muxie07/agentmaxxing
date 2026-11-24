@@ -123,3 +123,15 @@ def test_make_client_routes_by_model_name() -> None:
     assert isinstance(make_client("deepseek-r1:latest", host="http://x"), OllamaClient)
     g = make_client("gemini-2.5-flash", api_key=KEY, host="ignored")
     assert isinstance(g, GeminiClient)
+
+
+def test_evaluation_aborted_propagates_instead_of_counting_as_failure() -> None:
+    from agentmaxxing.extractor_eval import EvaluationAborted, evaluate
+
+    example = {"id": "e1", "tools": ["search"], "answer": "x", "receipts": [], "claims": []}
+
+    def extract(ex: dict[str, Any]) -> list[Any]:
+        raise EvaluationAborted("setup is broken")
+
+    with pytest.raises(EvaluationAborted):
+        evaluate([example], extract)

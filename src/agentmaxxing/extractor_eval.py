@@ -27,6 +27,10 @@ from .claims import Claim, ClaimResult, Verdict, verify_claims
 Extract = Callable[[dict[str, Any]], list[Claim]]
 
 
+class EvaluationAborted(Exception):
+    """Raised by an extractor to stop the whole evaluation (not counted as a failure)."""
+
+
 def load_examples(path: Path) -> list[dict[str, Any]]:
     rows = [json.loads(ln) for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
     return rows
@@ -76,6 +80,8 @@ def evaluate(examples: list[dict[str, Any]], extract: Extract) -> dict[str, Any]
         error: str | None = None
         try:
             claims = extract(ex)
+        except EvaluationAborted:
+            raise
         except Exception as exc:  # noqa: BLE001 - any extractor failure is data, not a crash
             claims, error = [], f"{type(exc).__name__}: {exc}"
             failures += 1
