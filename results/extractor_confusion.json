@@ -1,0 +1,33 @@
+{
+  "source": "replayed from results/extractor_raw.jsonl",
+  "confusion_gold_to_predicted": {
+    "VERIFIED": {
+      "RESULT_MISREPORTED": 22,
+      "(claim not found)": 12,
+      "VERIFIED": 9
+    },
+    "(no gold claim)": {
+      "UNVERIFIABLE": 28,
+      "NOT_CALLED": 23,
+      "FAILED_REPORTED_AS_SUCCESS": 1
+    },
+    "NOT_CALLED": {
+      "NOT_CALLED": 10,
+      "(claim not found)": 9,
+      "RESULT_MISREPORTED": 1
+    },
+    "FAILED_REPORTED_AS_SUCCESS": {
+      "(claim not found)": 10,
+      "FAILED_REPORTED_AS_SUCCESS": 10
+    },
+    "RESULT_MISREPORTED": {
+      "RESULT_MISREPORTED": 9,
+      "(claim not found)": 10,
+      "VERIFIED": 1
+    },
+    "UNVERIFIABLE": {
+      "UNVERIFIABLE": 6,
+      "(claim not found)": 4
+    }
+  }
+}

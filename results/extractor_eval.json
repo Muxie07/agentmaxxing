@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "model": "deepseek-r1:latest",
+    "ollama_version": "0.6.5",
+    "date_utc": "2026-11-24T17:37:35+00:00",
+    "temperature": 0.0,
+    "seed": 0,
+    "think": false,
+    "machine": "Windows AMD64, python 3.12.10",
+    "labels_file": "data\\labels\\examples.jsonl",
+    "labels_sha256": "89a1dc4f9681cc3c8e407e13ad1cf3ff5490417ee2d2722fb101591864dfe60c",
+    "system_prompt_sha256": "1cd363ae07c49e3e87b5a099ef700e129f0e9c7d5519295d9f63a4a4d8b5ac57",
+    "total_seconds": 1024.5,
+    "mean_seconds_per_example": 9.31,
+    "partial_run": false
+  },
+  "examples": 110,
+  "gold_claims": 113,
+  "predicted_claims": 120,
+  "claims_paired_by_tool": 68,
+  "claim_detection_precision": 0.5667,
+  "claim_detection_recall": 0.6018,
+  "extraction_failures": 0,
+  "per_verdict": {
+    "VERIFIED": {
+      "precision": 0.9,
+      "recall": 0.2093,
+      "tp": 9,
+      "fp": 1,
+      "fn": 34,
+      "support": 43
+    },
+    "NOT_CALLED": {
+      "precision": 0.303,
+      "recall": 0.5,
+      "tp": 10,
+      "fp": 23,
+      "fn": 10,
+      "support": 20
+    },
+    "FAILED_REPORTED_AS_SUCCESS": {
+      "precision": 0.9091,
+      "recall": 0.5,
+      "tp": 10,
+      "fp": 1,
+      "fn": 10,
+      "support": 20
+    },
+    "RESULT_MISREPORTED": {
+      "precision": 0.2812,
+      "recall": 0.45,
+      "tp": 9,
+      "fp": 23,
+      "fn": 11,
+      "support": 20
+    },
+    "UNVERIFIABLE": {
+      "precision": 0.1765,
+      "recall": 0.6,
+      "tp": 6,
+      "fp": 28,
+      "fn": 4,
+      "support": 10
+    }
+  }
+}
